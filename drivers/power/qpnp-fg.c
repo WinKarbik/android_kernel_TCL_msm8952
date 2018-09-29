@@ -283,8 +283,13 @@ static char *fg_batt_type;
 module_param_named(
 	battery_type, fg_batt_type, charp, S_IRUSR | S_IWUSR
 );
-
+// [FEATURE]-ADD-BEGIN TCTSH.SZY,2/23/2016,1652888
+#if defined(CONFIG_TCT_8X76_IDOL4) && defined(FEATURE_TCTSH_MMITEST)
+static int fg_sram_update_period_ms = 1000;
+#else
 static int fg_sram_update_period_ms = 30000;
+#endif
+// [FEATURE]-ADD-END TCTSH.SZY,2/23/2016,1652888
 module_param_named(
 	sram_update_period_ms, fg_sram_update_period_ms, int, S_IRUSR | S_IWUSR
 );
@@ -393,6 +398,11 @@ struct fg_chip {
 	u8			pmic_subtype;
 	u8			pmic_revision;
 	u8			revision[4];
+/* [FEATURE]-ADD-BEGIN TCTNB.WJ,1/4/2016, PR1278852 */
+#if defined(CONFIG_TCT_8X76_COMMON)//szy modify for 1623721,2016.2.18
+	u8			last_msoc;
+#endif
+/* [FEATURE]-ADD-END TCTNB.WJ */
 	u16			soc_base;
 	u16			batt_base;
 	u16			mem_base;
@@ -647,12 +657,19 @@ static int fg_masked_write(struct fg_chip *chip, u16 addr,
 		pr_err("spmi read failed: addr=%03X, rc=%d\n", addr, rc);
 		return rc;
 	}
-	pr_debug("addr = 0x%x read 0x%x\n", addr, reg);
+
+// [FEATURE]-MOD-BEGIN TCTNB.WJ,12/8/2015,1053888
+	if(fg_debug_mask & FG_SPMI_DEBUG_READS)
+		pr_debug("addr = 0x%x read 0x%x\n", addr, reg);
+// [FEATURE]-MOD-END TCTNB.WJ
 
 	reg &= ~mask;
 	reg |= val & mask;
 
-	pr_debug("Writing 0x%x\n", reg);
+// [FEATURE]-MOD-BEGIN TCTNB.WJ,12/8/2015,1053888
+	if(fg_debug_mask & FG_SPMI_DEBUG_WRITES)
+		pr_debug("Writing 0x%x\n", reg);
+// [FEATURE]-MOD-END TCTNB.WJ
 
 	rc = fg_write(chip, &reg, addr, len);
 	if (rc) {
@@ -1655,7 +1672,13 @@ static int get_monotonic_soc_raw(struct fg_chip *chip)
 		if (rc) {
 			pr_err("spmi read failed: addr=%03x, rc=%d\n",
 				chip->soc_base + SOC_MONOTONIC_SOC, rc);
+/* [FEATURE]-MOD-BEGIN TCTNB.WJ,1/4/2016, PR1278852 */
+#if defined(CONFIG_TCT_8X76_COMMON)//szy modify for 1623721,2016.2.18
+			goto read_error;
+#else
 			return rc;
+#endif
+/* [FEATURE]-MOD-END TCTNB.WJ */
 		}
 
 		if (cap[0] == cap[1])
@@ -1666,12 +1689,32 @@ static int get_monotonic_soc_raw(struct fg_chip *chip)
 
 	if (tries == MAX_TRIES_SOC) {
 		pr_err("shadow registers do not match\n");
+/* [FEATURE]-MOD-BEGIN TCTNB.WJ,1/4/2016, PR1278852 */
+#if defined(CONFIG_TCT_8X76_COMMON)//szy modify for 1623721,2016.2.18
+		goto read_error;
+#else
 		return -EINVAL;
+#endif
+/* [FEATURE]-MOD-END TCTNB.WJ */
 	}
 
 	if (fg_debug_mask & FG_POWER_SUPPLY)
 		pr_info_ratelimited("raw: 0x%02x\n", cap[0]);
+/* [FEATURE]-ADD-BEGIN TCTNB.WJ,1/4/2016, PR1278852 */
+#if defined(CONFIG_TCT_8X76_COMMON)//szy modify for 1623721,2016.2.18
+	chip->last_msoc = cap[0];
+#endif
+/* [FEATURE]-ADD-END TCTNB.WJ */
 	return cap[0];
+
+/* [FEATURE]-ADD-BEGIN TCTNB.WJ,1/4/2016, PR1278852 */
+#if defined(CONFIG_TCT_8X76_COMMON)//szy modify for 1623721,2016.2.18
+read_error:
+	pr_err_ratelimited("read msoc error, using last:%d\n",
+						chip->last_msoc);
+	return chip->last_msoc;
+#endif
+/* [FEATURE]-ADD-END TCTNB.WJ */
 }
 
 #define EMPTY_CAPACITY		0
@@ -1700,8 +1743,15 @@ static int get_prop_capacity(struct fg_chip *chip)
 		return EMPTY_CAPACITY;
 	else if (msoc == FULL_SOC_RAW)
 		return FULL_CAPACITY;
+
+/* [FEATURE]-MOD-BEGIN TCTNB.WJ,1/4/2016, PR1278852 */
+#if defined(CONFIG_TCT_8X76_COMMON)//szy modify for 1623721,2016.2.18
+	return DIV_ROUND_UP(msoc * FULL_CAPACITY , FULL_SOC_RAW);
+#else
 	return DIV_ROUND_CLOSEST((msoc - 1) * (FULL_CAPACITY - 2),
 			FULL_SOC_RAW - 2) + 1;
+#endif
+/* [FEATURE]-MOD-END TCTNB.WJ */
 }
 
 #define HIGH_BIAS	3
@@ -2595,6 +2645,12 @@ static int fg_power_get_property(struct power_supply *psy,
 		break;
 	case POWER_SUPPLY_PROP_TEMP:
 		val->intval = get_sram_prop_now(chip, FG_DATA_BATT_TEMP);
+
+/* [FEATURE]-ADD-BEGIN TCTNB.WJ,1/6/2016,FR1253320 */
+#if defined(FEATURE_TCTNB_MMITEST)
+		val->intval = DEFAULT_TEMP_DEGC;
+#endif
+/* [FEATURE]-ADD-END TCTNB.WJ,1/6/2016 */
 		break;
 	case POWER_SUPPLY_PROP_COOL_TEMP:
 		val->intval = get_prop_jeita_temp(chip, FG_MEM_SOFT_COLD);
@@ -3504,7 +3560,12 @@ static int fg_property_is_writeable(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_COOL_TEMP:
 	case POWER_SUPPLY_PROP_WARM_TEMP:
 	case POWER_SUPPLY_PROP_CYCLE_COUNT_ID:
+// [FEATURE]-ADD-BEGIN TCTNB.WJ,12/3/2015,536521
+#if defined(CONFIG_TCT_8X76_COMMON)//[FEATURE] MODIFY-BY-SUN ZHANGYANG,2016.04.05, DEFECT1910727 //MODIFIED by jin.wang, 2016-04-11,BUG-1921545
+	case POWER_SUPPLY_PROP_UPDATE_NOW:
 		return 1;
+#endif
+// [FEATURE]-ADD-END TCTNB.WJ,12/3/2015,536521
 	default:
 		break;
 	}
@@ -5726,7 +5787,13 @@ static int fg_common_hw_init(struct fg_chip *chip)
 	}
 
 	rc = fg_mem_masked_write(chip, settings[FG_MEM_DELTA_SOC].address, 0xFF,
+/* [FEATURE]-MOD-BEGIN TCTNB.WJ,1/8/2016, FR 1391100 */
+#if defined(CONFIG_TCT_8X76_COMMON)//szy modify for 1623721,2016.2.18
+			1,
+#else
 			soc_to_setpoint(settings[FG_MEM_DELTA_SOC].value),
+#endif
+/* [FEATURE]-MOD-END TCTNB.WJ */
 			settings[FG_MEM_DELTA_SOC].offset);
 	if (rc) {
 		pr_err("failed to write delta soc rc=%d\n", rc);
@@ -6113,6 +6180,11 @@ static int fg_probe(struct spmi_device *spmi)
 	chip->spmi = spmi;
 	chip->dev = &(spmi->dev);
 
+/* [FEATURE]-ADD-BEGIN TCTNB.WJ,1/4/2016, PR1278852 */
+#if defined(CONFIG_TCT_8X76_COMMON)//szy modify for 1623721,2016.2.18
+	chip->last_msoc = 127;
+#endif
+/* [FEATURE]-ADD-END TCTNB.WJ */
 	wakeup_source_init(&chip->empty_check_wakeup_source.source,
 			"qpnp_fg_empty_check");
 	wakeup_source_init(&chip->memif_wakeup_source.source,

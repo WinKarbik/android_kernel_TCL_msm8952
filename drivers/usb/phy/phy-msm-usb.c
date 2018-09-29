@@ -1953,10 +1953,23 @@ static void msm_otg_notify_host_mode(struct msm_otg *motg, bool host_mode)
 		power_supply_changed(psy);
 	}
 }
-
+/*[FEATURE]-Modified-BEGIN by TCTSH.xingchen.wang for defect 1305291, 2016/02/18, adjust TP behavior when plug in/out USB*/
+#if defined(CONFIG_TCT_8X76_IDOL4)
+extern void ft5x06_disable_change_scanning_frq(void);
+extern void ft5x06_enable_change_scanning_frq(void);
+extern bool is_ft5x06;
+bool charger_in = false;
+#endif
+/*[FEATURE]-Modified-BEGIN by TCTSH.xingchen.wang for defect 1305291, 2016/02/18*/
 static int msm_otg_notify_chg_type(struct msm_otg *motg)
 {
 	static int charger_type;
+/*[FEATURE]-Modified-BEGIN by TCTSH.xingchen.wang for defect 1305291, 2016/02/18, adjust TP behavior when plug in/out USB*/
+#if defined(CONFIG_TCT_8X76_IDOL4)
+	int charger_type_last;
+	charger_type_last = charger_type;
+#endif
+/*[FEATURE]-Modified-BEGIN by TCTSH.xingchen.wang for defect 1305291, 2016/02/18*/
 
 	/*
 	 * TODO
@@ -1980,7 +1993,23 @@ static int msm_otg_notify_chg_type(struct msm_otg *motg)
 		charger_type = POWER_SUPPLY_TYPE_USB_ACA;
 	else
 		charger_type = POWER_SUPPLY_TYPE_UNKNOWN;
+/*[FEATURE]-Modified-BEGIN by TCTSH.xingchen.wang for defect 1305291, 2016/02/18, adjust TP behavior when plug in/out USB*/
+#if defined(CONFIG_TCT_8X76_IDOL4)
+		if ((charger_type_last == POWER_SUPPLY_TYPE_UNKNOWN) && ((charger_type == POWER_SUPPLY_TYPE_USB_DCP) || (charger_type == POWER_SUPPLY_TYPE_USB))) { // charger plug in
+			printk("[wxc]%s AC or USB charger in \n", __func__);
+			charger_in = true;
+			if (is_ft5x06 == true)
+				ft5x06_enable_change_scanning_frq();
+		}
 
+		if (((charger_type_last == POWER_SUPPLY_TYPE_USB_DCP) || (charger_type_last == POWER_SUPPLY_TYPE_USB))&& (charger_type == POWER_SUPPLY_TYPE_UNKNOWN)) {// charger plug out
+			printk("[wxc]%s AC or USB charger out\n", __func__);
+			charger_in = false;
+			if (is_ft5x06 == true)
+				ft5x06_disable_change_scanning_frq();
+		}
+#endif
+/*[FEATURE]-Modified-BEGIN by TCTSH.xingchen.wang for defect 1305291, 2016/02/18*/
 	if (!psy) {
 		pr_err("No USB power supply registered!\n");
 		return -EINVAL;

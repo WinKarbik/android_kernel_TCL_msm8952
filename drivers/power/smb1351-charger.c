@@ -1373,6 +1373,17 @@ static int smb1351_parallel_set_chg_present(struct smb1351_charger *chip,
 			pr_err("Couldn't configure for volatile rc = %d\n", rc);
 			return rc;
 		}
+// [BUG]-ADD-BEGIN TCTNB.WJ,3/7/2016, PR1507964, use qcom patch to solve hold-off issue
+#if defined(CONFIG_TCT_8X76_COMMON)
+		rc = smb1351_masked_write(chip, PON_OPTIONS_REG,
+			INPUT_MISSING_POLLER_CONFIG_BIT, 
+			INPUT_MISSING_POLLER_CONFIG_BIT);
+		if (rc) {
+			pr_err("Couldn't set 0x13[3] to 1, rc = %d\n", rc);
+			return rc;
+		}
+#endif
+// [BUG]-ADD-END
 
 		/* set the float voltage */
 		if (chip->vfloat_mv != -EINVAL) {

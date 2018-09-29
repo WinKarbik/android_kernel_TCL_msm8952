@@ -23,6 +23,7 @@ obj-$(CONFIG_LEDS_PCA9532)		+= leds-pca9532.o
 obj-$(CONFIG_LEDS_QPNP)			+= leds-qpnp.o
 obj-$(CONFIG_LEDS_QPNP_FLASH)		+= leds-qpnp-flash.o
 obj-$(CONFIG_LEDS_QPNP_WLED)		+= leds-qpnp-wled.o
+obj-$(CONFIG_TCT_8x76_IDOL4_FRONT_LED)   += front_flash_idol4.o
 obj-$(CONFIG_LEDS_GPIO_REGISTER)	+= leds-gpio-register.o
 obj-$(CONFIG_LEDS_GPIO)			+= leds-gpio.o
 obj-$(CONFIG_LEDS_LP3944)		+= leds-lp3944.o
@@ -61,6 +62,8 @@ obj-$(CONFIG_LEDS_AW2013)		+= leds-aw2013.o
 
 # LED SPI Drivers
 obj-$(CONFIG_LEDS_DAC124S085)		+= leds-dac124s085.o
-
+#[PLATFORM]-Add-BEGIN by TCTNB.XQJ, RR-526565, 2015/11/05, add sn31 for idol4s global 
+obj-$(CONFIG_LEDS_SN31XX)		+= leds-sn3191.o # [PLATFORM]-Mod by TCTNB.XQJ, RR-526565, 2015/12/04, modify driver name 
+# [PLATFORM]-Add-END by TCTNB.XQJ
 # LED Triggers
 obj-$(CONFIG_LEDS_TRIGGERS)		+= trigger/

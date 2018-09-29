@@ -213,7 +213,9 @@ targets += dtbs
 targets += $(DTB_LIST)
 
 #used for cleaning - not building
+ifndef CONFIG_TCT_8X76_COMMON
 subdir- := dts/qcom
+endif
 endif
 
 # *.dtb used to be generated in the directory above. Clean out the

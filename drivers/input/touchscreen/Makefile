@@ -83,3 +83,7 @@ obj-$(CONFIG_TOUCHSCREEN_GT9XX)		+= gt9xx/
 obj-$(CONFIG_TOUCHSCREEN_BU21150)	+= bu21150.o
 obj-$(CONFIG_INPUT_MT_WRAPPER)		+= input_mt_wrapper.o
 obj-$(CONFIG_TOUCHSCREEN_IT7260_I2C)	+= it7258_ts_i2c.o
+#ADD-BEGIN by TCTSH xingchen.wang, task 1030308 for idol4 TP add,2015/12/04
+obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_IDOL4)		+= s3508_idol4/
+obj-$(CONFIG_TOUCHSCREEN_FT5436_IDOL4)	+= ft5436_idol4/
+#ADD-END by TCTSH xingchen.wang,2015/12/04

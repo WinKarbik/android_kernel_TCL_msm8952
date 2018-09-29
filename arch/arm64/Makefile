@@ -74,7 +74,13 @@ zinstall install: vmlinux
 
 dtbs: scripts
 	$(Q)$(MAKE) $(build)=$(boot)/dts dtbs
+
+ifndef CONFIG_TCT_8X76_COMMON
 	$(Q)$(MAKE) $(build)=$(boot)/dts/qcom dtbs
+endif
+ifdef CONFIG_TCT_8X76_IDOL4
+	$(Q)$(MAKE) $(build)=$(boot)/dts/idol4 dtbs
+endif
 
 PHONY += vdso_install
 vdso_install:

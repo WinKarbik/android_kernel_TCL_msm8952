@@ -197,6 +197,13 @@ int mmc_send_if_cond(struct mmc_host *host, u32 ocr)
 	static const u8 test_pattern = 0xAA;
 	u8 result_pattern;
 
+/*[PLATFORM]-ADD BEGIN by TCTNB.YuBin,2015/12/09,for SD CARD poweron acmd41 failed issue*/
+/*[PLATFORM]-ADD VDF project by TCTCD.Qiaozhen.li*/
+#if defined CONFIG_TCT_8X76_IDOL4
+	static u8 acmd41_failed_issue_flag = 0;
+#endif
+/*[PLATFORM]-ADD BEGIN by TCTNB.YuBin*/
+
 	/*
 	 * To support SD 2.0 cards, we must always invoke SD_SEND_IF_COND
 	 * before SD_APP_OP_COND. This command will harmlessly fail for
@@ -205,6 +212,17 @@ int mmc_send_if_cond(struct mmc_host *host, u32 ocr)
 	cmd.opcode = SD_SEND_IF_COND;
 	cmd.arg = ((ocr & 0xFF8000) != 0) << 8 | test_pattern;
 	cmd.flags = MMC_RSP_SPI_R7 | MMC_RSP_R7 | MMC_CMD_BCR;
+
+/*[PLATFORM]-ADD BEGIN by TCTNB.YuBin,2015/12/09,for SD CARD poweron acmd41 failed issue*/
+#if defined CONFIG_TCT_8X76_IDOL4
+	if(acmd41_failed_issue_flag == 0){
+		if( !strncmp(mmc_hostname(host), "mmc1", 4 ) ){
+			mmc_delay(40);
+			acmd41_failed_issue_flag = 1;
+		}
+	}
+#endif
+/*[PLATFORM]-ADD BEGIN by TCTNB.YuBin*/
 
 	err = mmc_wait_for_cmd(host, &cmd, 0);
 	if (err)

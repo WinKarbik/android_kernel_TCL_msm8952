@@ -1073,4 +1073,8 @@ config TOUCHSCREEN_IT7260_I2C
 	  To compile this driver as a module, choose M here: the
 	  module will be called it7258_ts_i2c.
 
+#ADD-BEGIN by TCTSH xingchen.wang, task 1030308 for idol4 TP add,2015/12/04
+source "drivers/input/touchscreen/s3508_idol4/Kconfig"
+source "drivers/input/touchscreen/ft5436_idol4/Kconfig"
+#ADD-END by TCTSH xingchen.wang,2015/12/04
 endif

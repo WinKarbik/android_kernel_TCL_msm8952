@@ -234,6 +234,10 @@ struct msm8916_asoc_mach_data {
 	void __iomem *vaddr_gpio_mux_mic_ctl;
 	void __iomem *vaddr_gpio_mux_quin_ctl;
 	void __iomem *vaddr_gpio_mux_pcm_ctl;
+/*TCT-NB Tianhongwei add for quin i2s slave mode*/
+	void __iomem *vaddr_gpio_mux_quin_pcm_ctl;
+	void __iomem *vaddr_gpio_mux_ext_clk_ctl;
+/*TCT-NB Tianhongwei end*/
 	struct on_demand_supply wsa_switch_supply;
 };
 
@@ -317,4 +321,3 @@ extern void msm8x16_wcd_spk_ext_pa_cb(
 		int (*codec_spk_ext_pa)(struct snd_soc_codec *codec,
 		int enable), struct snd_soc_codec *codec);
 #endif
-
